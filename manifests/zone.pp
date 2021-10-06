@@ -179,38 +179,35 @@
 #   Defaults to `master`.
 #
 define dns::zone (
-  $soa = $::fqdn,
-  $soa_email = "root.${::fqdn}",
+  $soa = $facts['fqdn'],
+  $soa_email = "root.${$facts['fqdn']}",
   $zone_ttl = '604800',
   $zone_refresh = '604800',
   $zone_retry = '86400',
   $zone_expire = '2419200',
   $zone_minimum = '604800',
-  $nameservers = [ $::fqdn ],
+  $nameservers = [ $facts['fqdn'] ],
   $reverse = false,
   $serial = false,
-  $zone_type = 'master',
-  $allow_transfer = [],
-  $allow_query =[],
-  $allow_update =[],
+  String $zone_type = 'master',
+  Array $allow_transfer = [],
+  Array $allow_query =[],
+  Array $allow_update =[],
   $forward_policy = 'first',
   $slave_masters = undef,
   $zone_notify = undef,
-  $also_notify = [],
+  Array $also_notify = [],
   $ensure = present,
-  $data_dir = $::dns::server::params::data_dir,
-  $view = undef,
-  $default_zone = false,
-  $forwarders = undef,
+  $data_dir = $dns::server::params::data_dir,
+  Optional[String] $view = undef,
+  Boolean $default_zone = false,
+  Optional[Array] $forwarders = undef,
 # DEPRECATED, to be removed in the next major release
-  $allow_forwarder = [],
+  Array $allow_forwarder = [],
 ) {
 
   $cfg_dir = $dns::server::params::cfg_dir
 
-  validate_array($allow_transfer)
-
-  validate_array($allow_forwarder)
   # deprecation notice for allow_forwarder
   if size($allow_forwarder) > 0 {
     warning('dns::zone parameter `allow_forwarder` deprecated in favor of `forwarders`')
@@ -230,7 +227,6 @@ define dns::zone (
         $zone_forwarders = []
       }
     } else {
-      validate_array($forwarders)
       $zone_forwarders = $forwarders
     }
   } elsif size($allow_forwarder) > 0 {
@@ -242,10 +238,9 @@ define dns::zone (
   if !member(['first', 'only'], $forward_policy) {
     fail('The forward policy can only be set to either first or only')
   }
-  validate_array($allow_query)
 
-  validate_array($also_notify)
   $valid_zone_notify = ['yes', 'no', 'explicit', 'master-only']
+
   if $zone_notify != undef and !member($valid_zone_notify, $zone_notify) {
     fail("The zone_notify must be ${valid_zone_notify}")
   }
@@ -256,8 +251,8 @@ define dns::zone (
     default   => $name
   }
 
-  validate_string($zone_type)
   $valid_zone_type_array = ['master', 'slave', 'stub', 'forward', 'delegation-only']
+
   if !member($valid_zone_type_array, $zone_type) {
     $valid_zone_type_array_str = join($valid_zone_type_array, ',')
     fail("The zone_type must be one of [${valid_zone_type_array}]")
@@ -266,19 +261,12 @@ define dns::zone (
   $zone_file = "${data_dir}/db.${name}"
   $zone_file_stage = "${zone_file}.stage"
 
-  validate_array($allow_update)
   # Replace when updates allowed
   if empty($allow_update) {
     $zone_replace = true
   } else {
     $zone_replace = false
   }
-
-  if $view {
-    validate_string($view)
-  }
-
-  validate_bool($default_zone)
 
   if $view and $default_zone == true {
     fail('view and default parameters are mutually excluding')

@@ -44,35 +44,29 @@
 #   Defaults to empty (no zone is added).
 #
 define dns::server::view (
-  $ensure               = 'present',
-  $enable_default_zones = true,
-  $match_clients        = [],
-  $match_destinations   = [],
-  $match_recursive_only = undef,
-  $options              = {},
-  $order                = '50',
-  $viewname             = $name,
-  $zones                = {},
+  $ensure                       = 'present',
+  Boolean $enable_default_zones = true,
+  Array $match_clients         = [],
+  Array $match_destinations    = [],
+  $match_recursive_only        = undef,
+  Hash $options                = {},
+  String $order                = '50',
+  String $viewname             = $name,
+  Hash $zones                  = {},
 ) {
-  include ::dns::server::params
+  include dns::server::params
 
   $valid_ensure = ['present', 'absent']
   $valid_yes_no = ['yes', 'no']
   if !member($valid_ensure, $ensure) {
     fail("ensure parameter must be ${valid_ensure}")
   }
-  validate_bool($enable_default_zones)
-  validate_array($match_clients)
-  validate_array($match_destinations)
+
   if $match_recursive_only {
     if !member($valid_yes_no, $match_recursive_only) {
       fail("match_recursive_only parameter must be ${valid_yes_no}")
     }
   }
-  validate_hash($options)
-  validate_string($order)
-  validate_string($viewname)
-  validate_hash($zones)
 
   $rfc1912_zones_cfg = $dns::server::params::rfc1912_zones_cfg
 

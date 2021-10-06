@@ -1,7 +1,7 @@
 # == Class dns::server::params
 #
 class dns::server::params {
-  case $::osfamily {
+  case $facts['osfamily'] {
     'Debian': {
       $cfg_dir            = '/etc/bind'
       $cfg_file           = '/etc/bind/named.conf'
@@ -18,7 +18,8 @@ class dns::server::params {
       $default_template   = 'default.debian.erb'
       $default_dnssec_enable     = true
       $default_dnssec_validation = 'auto'
-      if versioncmp( $::operatingsystemmajrelease, '8' ) >= 0 {
+
+      if versioncmp( $facts['operatingsystemmajrelease'], '8' ) >= 0 {
         $necessary_packages = [ 'bind9', 'bind9utils' ]
       } else {
         $necessary_packages = [ 'bind9', 'bind9utils', 'dnssec-tools' ]
@@ -39,7 +40,7 @@ class dns::server::params {
       $necessary_packages = [ 'bind', ]
       $default_file       = '/etc/sysconfig/named'
       $default_template   = 'default.redhat.erb'
-      if $::operatingsystemmajrelease =~ /^[1-5]$/ {
+      if $facts['operatingsystemmajrelease'] =~ /^[1-5]$/ {
         $default_dnssec_enable     = false
         $default_dnssec_validation = 'absent'
       } else {

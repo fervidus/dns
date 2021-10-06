@@ -155,65 +155,61 @@
 #   }
 #
 define dns::server::options (
-  $allow_query = [],
-  $allow_recursion = [],
-  $also_notify = [],
+  Array $allow_query = [],
+  Array $allow_recursion = [],
+  Array $also_notify = [],
   $check_names_master = undef,
   $check_names_slave = undef,
   $check_names_response = undef,
   $control_channel_ip = undef,
   $control_channel_port = undef,
-  $control_channel_allow = undef,
-  $data_dir = $::dns::server::params::data_dir,
-  $dnssec_validation = $::dns::server::params::default_dnssec_validation,
-  $dnssec_enable = $::dns::server::params::default_dnssec_enable,
-  $forward_policy = undef,
-  $forwarders = [],
-  $listen_on = [],
-  $listen_on_ipv6 = [],
+  Optional[Array] $control_channel_allow = undef,
+  Stdlib::Absolutepath $data_dir = $dns::server::params::data_dir,
+  $dnssec_validation = $dns::server::params::default_dnssec_validation,
+  Boolean $dnssec_enable = $dns::server::params::default_dnssec_enable,
+  String $forward_policy = undef,
+  Array $forwarders = [],
+  Array $listen_on = [],
+  Array $listen_on_ipv6 = [],
   $listen_on_port = undef,
-  $log_channels = {},
-  $log_categories = {},
-  $no_empty_zones = false,
+  Hash $log_channels = {},
+  Hash $log_categories = {},
+  Boolean $no_empty_zones = false,
   $notify_source = undef,
   $query_log_enable = undef,
   $statistic_channel_ip = undef,
   $statistic_channel_port = undef,
-  $statistic_channel_allow = undef,
-  $transfers = [],
+  Optional[Array] $statistic_channel_allow = undef,
+  Array $transfers = [],
   $transfer_source = undef,
-  $working_dir = $::dns::server::params::working_dir,
+  Stdlib::Absolutepath $working_dir = $dns::server::params::working_dir,
   $zone_notify = undef,
-  $extra_options = {},
+  Hash $extra_options = {},
 ) {
   include dns::server::params
   $valid_check_names = ['fail', 'warn', 'ignore']
   $valid_forward_policy = ['first', 'only']
-  $cfg_dir = $::dns::server::params::cfg_dir
+  $cfg_dir = $dns::server::params::cfg_dir
 
   if ! defined(Class['::dns::server']) {
     fail('You must include the ::dns::server base class before using any dns options defined resources')
   }
 
-  validate_string($forward_policy)
   if $forward_policy != undef and !member($valid_forward_policy, $forward_policy) {
     fail("The forward_policy must be ${valid_forward_policy}")
   }
-  validate_array($forwarders)
-  validate_array($transfers)
-  validate_array($listen_on)
-  validate_array($listen_on_ipv6)
-  validate_array($allow_recursion)
+
   if $check_names_master != undef and !member($valid_check_names, $check_names_master) {
     fail("The check name policy check_names_master must be ${valid_check_names}")
   }
+
   if $check_names_slave != undef and !member($valid_check_names, $check_names_slave) {
     fail("The check name policy check_names_slave must be ${valid_check_names}")
   }
+
   if $check_names_response != undef and !member($valid_check_names, $check_names_response) {
     fail("The check name policy check_names_response must be ${valid_check_names}")
   }
-  validate_array($allow_query)
 
   if $statistic_channel_port != undef and !is_numeric($statistic_channel_port) {
     fail('The statistic_channel_port is not a number')
@@ -223,10 +219,6 @@ define dns::server::options (
     fail('The statistic_channel_ip is not an ip string')
   }
 
-  if $statistic_channel_allow != undef {
-    validate_array($statistic_channel_allow)
-  }
-
   if $control_channel_port != undef and !is_numeric($control_channel_port) {
     fail('The control_channel_port is not a number')
   }
@@ -234,12 +226,6 @@ define dns::server::options (
   if $control_channel_ip != undef and (!is_string($control_channel_ip) or !is_ip_address($control_channel_ip)) {
     fail('The control_channel_ip is not an ip string')
   }
-
-  if $control_channel_allow != undef {
-    validate_array($control_channel_allow)
-  }
-
-  validate_array($also_notify)
 
   $valid_zone_notify = ['yes', 'no', 'explicit', 'master-only']
   if $zone_notify != undef and !member($valid_zone_notify, $zone_notify) {
@@ -251,9 +237,6 @@ define dns::server::options (
     fail("The dnssec_validation must be ${valid_dnssec_validation}")
   }
 
-  validate_bool($no_empty_zones)
-
-  validate_bool($dnssec_enable)
   if (! $dnssec_enable) and ($dnssec_validation != undef) {
     warning('dnssec_enable is false. dnssec_validation will be ignored.')
   }
@@ -266,19 +249,10 @@ define dns::server::options (
     fail('The transfer_source is not an ip string')
   }
 
-  # validate these, just in case they're overridden
-  validate_absolute_path($data_dir)
-  validate_absolute_path($working_dir)
-
-  validate_hash($log_channels)
-  validate_hash($log_categories)
-
-  validate_hash($extra_options)
-
   file { $title:
     ensure  => present,
-    owner   => $::dns::server::params::owner,
-    group   => $::dns::server::params::group,
+    owner   => $dns::server::params::owner,
+    group   => $dns::server::params::group,
     mode    => '0644',
     require => [File[$cfg_dir], Class['::dns::server::install']],
     content => template("${module_name}/named.conf.options.erb"),

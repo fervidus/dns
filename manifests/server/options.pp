@@ -167,7 +167,7 @@ define dns::server::options (
   Stdlib::Absolutepath $data_dir = $dns::server::params::data_dir,
   $dnssec_validation = $dns::server::params::default_dnssec_validation,
   Boolean $dnssec_enable = $dns::server::params::default_dnssec_enable,
-  String $forward_policy = undef,
+  Optional[String] $forward_policy = undef,
   Array $forwarders = [],
   Array $listen_on = [],
   Array $listen_on_ipv6 = [],
